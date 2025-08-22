@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using TicketEase.Business.Exceptions;
 using TicketEase.Business.Operations.Venue.Dtos;
 using TicketEase.Business.Types;
@@ -127,5 +128,59 @@ namespace TicketEase.Business.Operations.Venue
                 Capacity = v.Capacity
             }).ToList();
         }
+
+        public async Task<ServiceMessage<IEnumerable<VenueDto>>> GetPagedVenues(
+            string nameStartsWith = null,
+            int page = 1,
+            int pageSize = 10,
+            bool? sortByCapacityAsc = null,
+            int? minCapacity = null
+        )
+        {
+            var query = _venueRepository.Query();
+
+            if (!string.IsNullOrWhiteSpace(nameStartsWith))
+            {
+                var search = nameStartsWith.Trim().ToLower();
+                query = query.Where(v => v.Name.ToLower().StartsWith(search));
+            }
+
+            if (minCapacity.HasValue)
+            {
+                query = query.Where(v => v.Capacity >= minCapacity.Value);
+            }
+
+            if (sortByCapacityAsc.HasValue)
+            {
+                query = sortByCapacityAsc.Value
+                    ? query.OrderBy(v => v.Capacity)
+                    : query.OrderByDescending(v => v.Capacity);
+            }
+
+            var totalItems = await query.CountAsync();
+            var totalPages = (int)System.Math.Ceiling(totalItems / (double)pageSize);
+
+            var venues = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var dtos = venues.Select(v => new VenueDto
+            {
+                Id = v.Id,
+                Name = v.Name,
+                Address = v.Address,
+                City = v.City,
+                Capacity = v.Capacity
+            });
+
+            return new ServiceMessage<IEnumerable<VenueDto>>
+            {
+                Success = true,
+                Message = $"Page {page} of {totalPages}",
+                Data = dtos
+            };
+        }
     }
 }
+

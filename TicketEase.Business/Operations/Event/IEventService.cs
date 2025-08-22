@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using TicketEase.Business.Operations.Event.Dtos;
+using TicketEase.Business.Operations.User.Dtos;
 using TicketEase.Business.Types;
 using TicketEase.Data.Enums;
 
@@ -22,5 +23,7 @@ namespace TicketEase.Business.Operations.Event
         Task<ServiceMessage<IEnumerable<EventDto>>> GetPagedEvents(int page, int pageSize, EventType? eventType = null);
 
         Task<ServiceMessage<IEnumerable<EventDto>>> SearchEventsByName(string nameStartsWith);
+
+        Task<IEnumerable<UserDto>> GetEventParticipantsAsync(int eventId);
     }
 }

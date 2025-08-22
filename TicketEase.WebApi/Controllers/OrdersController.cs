@@ -4,9 +4,11 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using TicketEase.Business.Operations.Order;
 using TicketEase.Business.Operations.Order.Dtos;
+using TicketEase.Business.Types;
 using TicketEase.WebApi.Filters;
 using TicketEase.WebApi.Models;
 using TicketEase.WebApi.Models.Update;
+using TicketEase.Business.Exceptions;
 
 namespace TicketEase.WebApi.Controllers
 {
@@ -25,22 +27,20 @@ namespace TicketEase.WebApi.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> AddOrder(OrderRequestModel model)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (!ModelState.IsValid)
+                throw new ValidationException("Invalid order model.");
 
             var dto = new AddOrderDto { UserId = model.UserId, TicketIds = model.TicketIds };
             var result = await _orderService.AddOrder(dto);
 
-            if (!result.Success) return BadRequest(new { result.Message });
-
-            return Ok(new { result.Message, OrderId = result.Data });
+            return result.Success ? Ok(result) : BadRequest(result);
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetOrder(int id)
         {
             var result = await _orderService.GetByIdAsync(id);
-            if (!result.Success) return NotFound(new { result.Message });
-            return Ok(result.Data);
+            return result.Success ? Ok(result) : NotFound(result);
         }
 
         [HttpGet("all")]
@@ -48,8 +48,7 @@ namespace TicketEase.WebApi.Controllers
         public async Task<IActionResult> GetAll()
         {
             var result = await _orderService.GetAllAsync();
-            if (!result.Success) return BadRequest(new { result.Message });
-            return Ok(result.Data);
+            return result.Success ? Ok(result) : BadRequest(result);
         }
 
         [HttpDelete("{id}")]
@@ -57,18 +56,15 @@ namespace TicketEase.WebApi.Controllers
         public async Task<IActionResult> DeleteOrder(int id)
         {
             var result = await _orderService.DeleteAsync(id);
-            if (!result.Success) return NotFound(new { result.Message });
-            return NoContent();
+            return result.Success ? Ok(result) : NotFound(result);
         }
 
         [HttpPut("update/{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateOrder(int id, UpdateOrderRequestModel model)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
-
-            var existingOrder = await _orderService.GetByIdAsync(id);
-            if (!existingOrder.Success) return NotFound(new { existingOrder.Message });
+            if (!ModelState.IsValid)
+                throw new ValidationException("Invalid order update model.");
 
             var dto = new UpdateOrderDto
             {
@@ -79,17 +75,14 @@ namespace TicketEase.WebApi.Controllers
             };
 
             var result = await _orderService.UpdateOrder(id, dto);
-            if (!result.Success) return BadRequest(new { result.Message });
-
-            return Ok(new { result.Message });
+            return result.Success ? Ok(result) : BadRequest(result);
         }
 
         [HttpGet("user/{userId}")]
         public async Task<IActionResult> GetOrdersByUser(int userId)
         {
             var result = await _orderService.GetOrdersByUserIdAsync(userId);
-            if (!result.Success) return NotFound(new { result.Message });
-            return Ok(result.Data);
+            return result.Success ? Ok(result) : NotFound(result);
         }
     }
 }

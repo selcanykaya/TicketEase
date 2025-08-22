@@ -99,8 +99,12 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseMiddleware<MaintenanceModeMiddleware>();
+
 app.UseMiddleware<ExceptionMiddleware>();
+
+
+app.UseMiddleware<MaintenanceModeMiddleware>();
+
 
 
 app.UseAuthentication();

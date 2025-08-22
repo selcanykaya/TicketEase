@@ -1,11 +1,12 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using TicketEase.Business.Operations.Ticket;
 using TicketEase.Business.Operations.Ticket.Dtos;
-using TicketEase.WebApi.Models;
 using TicketEase.WebApi.Models.Update;
-using TicketEase.Business.Exceptions; 
+using TicketEase.Business.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using TicketEase.WebApi.Filters;
+using TicketEase.Business.Types;
+using TicketEase.WebApi.Models;
 
 namespace TicketEase.WebApi.Controllers
 {
@@ -36,14 +37,29 @@ namespace TicketEase.WebApi.Controllers
             };
 
             await _ticketService.AddTicket(dto);
-            return Ok(new { Message = "Ticket successfully added." });
+
+            var response = new ServiceMessage
+            {
+                Success = true,
+                Message = "Ticket successfully added."
+            };
+
+            return Ok(response);
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetTicket(int id)
         {
-            var ticket = await _ticketService.GetByIdAsync(id); 
-            return Ok(ticket);
+            var ticket = await _ticketService.GetByIdAsync(id);
+
+            var response = new ServiceMessage<TicketDto>
+            {
+                Success = true,
+                Message = "Ticket retrieved successfully.",
+                Data = ticket
+            };
+
+            return Ok(response);
         }
 
         [HttpGet("all")]
@@ -51,15 +67,30 @@ namespace TicketEase.WebApi.Controllers
         public async Task<IActionResult> GetAll()
         {
             var tickets = await _ticketService.GetAllAsync();
-            return Ok(tickets);
+
+            var response = new ServiceMessage<IEnumerable<TicketDto>>
+            {
+                Success = true,
+                Message = "Tickets retrieved successfully.",
+                Data = tickets
+            };
+
+            return Ok(response);
         }
 
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteTicket(int id)
         {
-            await _ticketService.DeleteAsync(id); 
-            return NoContent();
+            await _ticketService.DeleteAsync(id);
+
+            var response = new ServiceMessage
+            {
+                Success = true,
+                Message = "Ticket deleted successfully."
+            };
+
+            return Ok(response);
         }
 
         [HttpPut("update/{id}")]
@@ -77,22 +108,45 @@ namespace TicketEase.WebApi.Controllers
                 EventId = model.EventId
             };
 
-            await _ticketService.UpdateTicket(id, dto); 
-            return Ok(new { Message = "Ticket updated successfully." });
+            await _ticketService.UpdateTicket(id, dto);
+
+            var response = new ServiceMessage
+            {
+                Success = true,
+                Message = "Ticket updated successfully."
+            };
+
+            return Ok(response);
         }
 
         [HttpGet("is-sold/{ticketId}")]
         public async Task<IActionResult> IsTicketSold(int ticketId)
         {
             var isSold = await _ticketService.IsTicketSoldAsync(ticketId);
-            return Ok(new { TicketId = ticketId, IsSold = isSold });
+
+            var response = new ServiceMessage<object>
+            {
+                Success = true,
+                Message = "Ticket status retrieved successfully.",
+                Data = new { TicketId = ticketId, IsSold = isSold }
+            };
+
+            return Ok(response);
         }
 
         [HttpGet("sold-count/{eventId}")]
         public async Task<IActionResult> GetSoldTicketCount(int eventId)
         {
             var count = await _ticketService.CountSoldTicketsByEventAsync(eventId);
-            return Ok(new { SoldTickets = count });
+
+            var response = new ServiceMessage<object>
+            {
+                Success = true,
+                Message = "Sold ticket count retrieved successfully.",
+                Data = new { EventId = eventId, SoldTickets = count }
+            };
+
+            return Ok(response);
         }
     }
 }

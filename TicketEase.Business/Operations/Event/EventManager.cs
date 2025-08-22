@@ -10,6 +10,8 @@ using TicketEase.Data.Entities;
 using TicketEase.Data.Enums;
 using TicketEase.Data.Repositories;
 using TicketEase.Data.UnitOfWork;
+using Microsoft.EntityFrameworkCore;
+using TicketEase.Business.Operations.User.Dtos;
 
 namespace TicketEase.Business.Operations.Event
 {
@@ -170,5 +172,30 @@ namespace TicketEase.Business.Operations.Event
                 Data = dtos
             };
         }
+
+        public async Task<IEnumerable<UserDto>> GetEventParticipantsAsync(int eventId)
+        {
+            var users = await _eventRepository.Query()
+                .Where(e => e.Id == eventId)
+                .SelectMany(e => e.Tickets)
+                .SelectMany(t => t.TicketOrders)
+                .Select(to => to.Order.User)
+                .Distinct()
+                .Select(u => new UserDto
+                {
+                    Id = u.Id,
+                    FirstName = u.FirstName,
+                    LastName = u.LastName,
+                    Email = u.Email
+                })
+                .ToListAsync();
+
+            return users;
+        }
+
+
+
+
+
     }
 }

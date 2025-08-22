@@ -24,7 +24,10 @@ namespace TicketEase.WebApi.Controllers
         public async Task<IActionResult> GetUserById(int id)
         {
             var result = await _userService.GetByIdAsync(id);
-            return Ok(result.Data); 
+            if (!result.Success)
+                throw new NotFoundException(result.Message);
+
+            return Ok(result);
         }
 
         [HttpGet("all")]
@@ -32,7 +35,20 @@ namespace TicketEase.WebApi.Controllers
         public async Task<IActionResult> GetAll()
         {
             var result = await _userService.GetAllAsync();
-            return Ok(result.Data);
+            if (!result.Success)
+                throw new ValidationException(result.Message);
+
+            return Ok(result);
+        }
+
+        [HttpGet("by-email")]
+        public async Task<IActionResult> GetUserByEmail([FromQuery] string email)
+        {
+            var result = await _userService.GetUserByEmailAsync(email);
+            if (!result.Success)
+                throw new NotFoundException(result.Message);
+
+            return Ok(result);
         }
 
         [HttpDelete("{id}")]
@@ -40,7 +56,10 @@ namespace TicketEase.WebApi.Controllers
         public async Task<IActionResult> DeleteUser(int id)
         {
             var result = await _userService.DeleteAsync(id);
-            return Ok(new { Message = result.Message });
+            if (!result.Success)
+                throw new ValidationException(result.Message);
+
+            return Ok(result);
         }
 
         [HttpPut("update/{id}")]
@@ -59,8 +78,11 @@ namespace TicketEase.WebApi.Controllers
                 UserType = model.UserType
             };
 
-            await _userService.UpdateUser(id, dto);
-            return Ok(new { Message = "User updated successfully." });
+            var result = await _userService.UpdateUser(id, dto);
+            if (!result.Success)
+                throw new ValidationException(result.Message);
+
+            return Ok(result);
         }
 
         [HttpPatch("update-type/{id}")]
@@ -70,8 +92,11 @@ namespace TicketEase.WebApi.Controllers
             if (!ModelState.IsValid)
                 throw new ValidationException("Invalid user type model.");
 
-            await _userService.UpdateUserTypeAsync(id, model.UserType);
-            return Ok(new { Message = "User type updated successfully." });
+            var result = await _userService.UpdateUserTypeAsync(id, model.UserType);
+            if (!result.Success)
+                throw new ValidationException(result.Message);
+
+            return Ok(result);
         }
 
         [HttpPatch("patch/{id}")]
@@ -87,15 +112,11 @@ namespace TicketEase.WebApi.Controllers
                 BirthDate = model.BirthDate
             };
 
-            await _userService.PatchUser(id, dto);
-            return Ok(new { Message = "User updated successfully." });
-        }
+            var result = await _userService.PatchUser(id, dto);
+            if (!result.Success)
+                throw new ValidationException(result.Message);
 
-        [HttpGet("by-email")]
-        public async Task<IActionResult> GetUserByEmail([FromQuery] string email)
-        {
-            var result = await _userService.GetUserByEmailAsync(email);
-            return Ok(result.Data); 
+            return Ok(result);
         }
     }
 }

@@ -1,11 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using TicketEase.Business.Operations.Payment;
 using TicketEase.Business.Operations.Payment.Dtos;
-using TicketEase.WebApi.Models;
 using TicketEase.WebApi.Models.Update;
 using Microsoft.AspNetCore.Authorization;
 using TicketEase.Business.Exceptions;
 using TicketEase.WebApi.Filters;
+using TicketEase.Business.Types;
+using System.Collections.Generic;
+using TicketEase.WebApi.Models;
 
 namespace TicketEase.WebApi.Controllers
 {
@@ -35,14 +37,29 @@ namespace TicketEase.WebApi.Controllers
             };
 
             await _paymentService.AddPayment(dto);
-            return Ok(new { Message = "Payment recorded successfully." });
+
+            var response = new ServiceMessage
+            {
+                Success = true,
+                Message = "Payment recorded successfully."
+            };
+
+            return Ok(response);
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetPayment(int id)
         {
             var payment = await _paymentService.GetByIdAsync(id);
-            return Ok(payment);
+
+            var response = new ServiceMessage<PaymentDto>
+            {
+                Success = true,
+                Message = "Payment retrieved successfully.",
+                Data = payment
+            };
+
+            return Ok(response);
         }
 
         [HttpGet("all")]
@@ -50,7 +67,15 @@ namespace TicketEase.WebApi.Controllers
         public async Task<IActionResult> GetAll()
         {
             var payments = await _paymentService.GetAllAsync();
-            return Ok(payments);
+
+            var response = new ServiceMessage<IEnumerable<PaymentDto>>
+            {
+                Success = true,
+                Message = "Payments retrieved successfully.",
+                Data = payments
+            };
+
+            return Ok(response);
         }
 
         [HttpDelete("{id}")]
@@ -58,7 +83,14 @@ namespace TicketEase.WebApi.Controllers
         public async Task<IActionResult> DeletePayment(int id)
         {
             await _paymentService.DeleteAsync(id);
-            return NoContent();
+
+            var response = new ServiceMessage
+            {
+                Success = true,
+                Message = "Payment deleted successfully."
+            };
+
+            return Ok(response);
         }
 
         [HttpPut("update/{id}")]
@@ -78,14 +110,29 @@ namespace TicketEase.WebApi.Controllers
             };
 
             await _paymentService.UpdatePayment(id, dto);
-            return Ok(new { Message = "Payment updated successfully." });
+
+            var response = new ServiceMessage
+            {
+                Success = true,
+                Message = "Payment updated successfully."
+            };
+
+            return Ok(response);
         }
 
         [HttpGet("exists/{transactionId}")]
         public async Task<IActionResult> PaymentExists(string transactionId)
         {
             var exists = await _paymentService.PaymentExists(transactionId);
-            return Ok(new { TransactionId = transactionId, Exists = exists });
+
+            var response = new ServiceMessage<object>
+            {
+                Success = true,
+                Message = "Payment existence checked successfully.",
+                Data = new { TransactionId = transactionId, Exists = exists }
+            };
+
+            return Ok(response);
         }
     }
 }

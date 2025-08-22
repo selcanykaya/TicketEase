@@ -6,8 +6,10 @@ using TicketEase.Business.Operations.Venue;
 using TicketEase.Business.Operations.Venue.Dtos;
 using TicketEase.Data.Enums;
 using TicketEase.WebApi.Filters;
-using TicketEase.WebApi.Models;
+using TicketEase.Business.Exceptions;
+using TicketEase.Business.Types;
 using TicketEase.WebApi.Models.Update;
+using TicketEase.WebApi.Models;
 
 namespace TicketEase.WebApi.Controllers
 {
@@ -27,7 +29,7 @@ namespace TicketEase.WebApi.Controllers
         public async Task<IActionResult> Add(VenueRequestModel model)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+                throw new ValidationException("Invalid venue model.");
 
             var dto = new AddVenueDto
             {
@@ -39,14 +41,17 @@ namespace TicketEase.WebApi.Controllers
 
             await _venueService.AddVenue(dto);
 
-            return Ok(new { Message = "Venue added successfully." });
+            return Ok(new ServiceMessage { Success = true, Message = "Venue added successfully." });
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetVenue(int id)
         {
             var venue = await _venueService.GetByIdAsync(id);
-            return Ok(venue);
+            if (venue == null)
+                throw new NotFoundException("Venue not found.");
+
+            return Ok(new ServiceMessage<VenueDto> { Success = true, Data = venue });
         }
 
         [HttpGet("all")]
@@ -54,7 +59,7 @@ namespace TicketEase.WebApi.Controllers
         public async Task<IActionResult> GetAll()
         {
             var venues = await _venueService.GetAllAsync();
-            return Ok(venues);
+            return Ok(new ServiceMessage<IEnumerable<VenueDto>> { Success = true, Data = venues });
         }
 
         [HttpDelete("{id}")]
@@ -62,7 +67,7 @@ namespace TicketEase.WebApi.Controllers
         public async Task<IActionResult> DeleteVenue(int id)
         {
             await _venueService.DeleteAsync(id);
-            return NoContent();
+            return Ok(new ServiceMessage { Success = true, Message = "Venue deleted successfully." });
         }
 
         [HttpPut("update/{id}")]
@@ -70,7 +75,7 @@ namespace TicketEase.WebApi.Controllers
         public async Task<IActionResult> UpdateVenue(int id, UpdateVenueRequestModel model)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+                throw new ValidationException("Invalid venue update model.");
 
             var dto = new UpdateVenueDto
             {
@@ -82,21 +87,36 @@ namespace TicketEase.WebApi.Controllers
 
             await _venueService.UpdateVenue(id, dto);
 
-            return Ok(new { Message = "Venue updated successfully." });
+            return Ok(new ServiceMessage { Success = true, Message = "Venue updated successfully." });
         }
 
         [HttpGet("sorted-by-capacity")]
         public async Task<IActionResult> GetVenuesSortedByCapacity(bool descending = false)
         {
             var venues = await _venueService.GetVenuesSortedByCapacity(descending);
-            return Ok(venues);
+            return Ok(new ServiceMessage<IEnumerable<VenueDto>> { Success = true, Data = venues });
         }
 
         [HttpGet("city/{city}")]
         public async Task<IActionResult> GetVenuesByCity(City city)
         {
             var venues = await _venueService.GetVenuesByCity(city);
-            return Ok(venues);
+            return Ok(new ServiceMessage<IEnumerable<VenueDto>> { Success = true, Data = venues });
+        }
+
+
+        /// Search venues with pagination, optional name filter, and capacity sorting.
+
+        [HttpGet("search")]
+        public async Task<ServiceMessage<IEnumerable<VenueDto>>> SearchVenues(
+            string nameStartsWith = null,
+            int page = 1,
+            int pageSize = 10,
+            bool? sortByCapacityAsc = null,
+            int? minCapacity = null
+        )
+        {
+            return await _venueService.GetPagedVenues(nameStartsWith, page, pageSize, sortByCapacityAsc, minCapacity);
         }
     }
 }

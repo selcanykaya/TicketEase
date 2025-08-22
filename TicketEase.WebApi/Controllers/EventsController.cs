@@ -144,5 +144,14 @@ namespace TicketEase.WebApi.Controllers
 
             return Ok(new { result.Message });
         }
+
+
+        // GET: api/Event/{eventId}/participants
+        [HttpGet("{eventId}/participants")]
+        public async Task<IActionResult> GetParticipants(int eventId)
+        {
+            var participants = await _eventService.GetEventParticipantsAsync(eventId);
+            return Ok(participants);
+        }
     }
 }
