@@ -69,5 +69,52 @@ namespace TicketEase.Data.Context
 
         public DbSet<SettingEntity> Settings => Set<SettingEntity>();
 
+
+        // Soft delete & UpdatedAt otomasyonu
+        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            var entries = ChangeTracker.Entries<BaseEntity>()
+                .Where(e => e.State == EntityState.Modified || e.State == EntityState.Deleted);
+
+            foreach (var entry in entries)
+            {
+                if (entry.State == EntityState.Deleted)
+                {
+                    // Soft delete uygula
+                    entry.State = EntityState.Modified;
+                    entry.Entity.IsDeleted = true;
+                    entry.Entity.UpdatedAt = DateTime.Now;
+
+                    // Eğer Ticket siliniyorsa -> ilgili TicketOrder’ları da soft delete
+                    if (entry.Entity is TicketEntity ticket)
+                    {
+                        var ticketOrders = Set<TicketOrderEntity>().Where(to => to.TicketId == ticket.Id);
+                        foreach (var to in ticketOrders)
+                        {
+                            to.IsDeleted = true;
+                            to.UpdatedAt = DateTime.Now;
+                        }
+                    }
+
+                    // Eğer Order siliniyorsa -> ilgili TicketOrder’ları da soft delete
+                    if (entry.Entity is OrderEntity order)
+                    {
+                        var ticketOrders = Set<TicketOrderEntity>().Where(to => to.OrderId == order.Id);
+                        foreach (var to in ticketOrders)
+                        {
+                            to.IsDeleted = true;
+                            to.UpdatedAt = DateTime.Now;
+                        }
+                    }
+                }
+                else if (entry.State == EntityState.Modified)
+                {
+                    entry.Entity.UpdatedAt = DateTime.Now;
+                }
+            }
+
+            return await base.SaveChangesAsync(cancellationToken);
+        }
     }
 }
+
