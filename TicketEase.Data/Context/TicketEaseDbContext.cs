@@ -9,12 +9,10 @@ using TicketEase.Data.Entities;
 using BCrypt.Net;
 using TicketEase.Data.Enums;
 
-
 namespace TicketEase.Data.Context
 {
     public class TicketEaseDbContext : DbContext
     {
-
         public TicketEaseDbContext(DbContextOptions<TicketEaseDbContext> options) : base(options)
         {
         }
@@ -36,28 +34,25 @@ namespace TicketEase.Data.Context
             {
                 Id = 1,
                 CreatedAt = DateTime.Now,
-                MaintenanceMode = false, // Default value for maintenance mode
+                MaintenanceMode = false,
             });
 
-            //Adding admin user
-
-            var password = "Admin123."; // admin password
-            var passwordHash = BCrypt.Net.BCrypt.HashPassword(password); // Hash the password
+            // Admin user ekle
+            var password = "Admin123.";
+            var passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
 
             modelBuilder.Entity<UserEntity>().HasData(new UserEntity
             {
-                Id = 1, 
+                Id = 1,
                 Email = "admin@email.com",
-                PasswordHash = passwordHash, 
+                PasswordHash = passwordHash,
                 FirstName = "Selcan",
                 LastName = "Yalçınkaya",
                 BirthDate = new DateTime(1998, 2, 3),
                 UserType = UserType.Admin,
                 CreatedAt = DateTime.Now
             });
-
         }
-
 
         public DbSet<UserEntity> Users => Set<UserEntity>();
         public DbSet<OrderEntity> Orders => Set<OrderEntity>();
@@ -66,9 +61,7 @@ namespace TicketEase.Data.Context
         public DbSet<EventEntity> Events => Set<EventEntity>();
         public DbSet<PaymentEntity> Payments => Set<PaymentEntity>();
         public DbSet<VenueEntity> Venues => Set<VenueEntity>();
-
         public DbSet<SettingEntity> Settings => Set<SettingEntity>();
-
 
         // Soft delete & UpdatedAt otomasyonu
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -85,10 +78,13 @@ namespace TicketEase.Data.Context
                     entry.Entity.IsDeleted = true;
                     entry.Entity.UpdatedAt = DateTime.Now;
 
-                    // Eğer Ticket siliniyorsa -> ilgili TicketOrder’ları da soft delete
+                    // Eğer Ticket soft delete ise -> TicketOrder soft delete
                     if (entry.Entity is TicketEntity ticket)
                     {
-                        var ticketOrders = Set<TicketOrderEntity>().Where(to => to.TicketId == ticket.Id);
+                        var ticketOrders = Set<TicketOrderEntity>()
+                            .IgnoreQueryFilters()
+                            .Where(to => to.TicketId == ticket.Id);
+
                         foreach (var to in ticketOrders)
                         {
                             to.IsDeleted = true;
@@ -96,10 +92,13 @@ namespace TicketEase.Data.Context
                         }
                     }
 
-                    // Eğer Order siliniyorsa -> ilgili TicketOrder’ları da soft delete
+                    // Eğer Order soft delete ise -> TicketOrder soft delete
                     if (entry.Entity is OrderEntity order)
                     {
-                        var ticketOrders = Set<TicketOrderEntity>().Where(to => to.OrderId == order.Id);
+                        var ticketOrders = Set<TicketOrderEntity>()
+                            .IgnoreQueryFilters()
+                            .Where(to => to.OrderId == order.Id);
+
                         foreach (var to in ticketOrders)
                         {
                             to.IsDeleted = true;
@@ -110,6 +109,33 @@ namespace TicketEase.Data.Context
                 else if (entry.State == EntityState.Modified)
                 {
                     entry.Entity.UpdatedAt = DateTime.Now;
+
+                    // 🔹 Eğer IsDeleted true olduysa propagation yap
+                    if (entry.Entity is OrderEntity order && order.IsDeleted)
+                    {
+                        var ticketOrders = Set<TicketOrderEntity>()
+                            .IgnoreQueryFilters()
+                            .Where(to => to.OrderId == order.Id);
+
+                        foreach (var to in ticketOrders)
+                        {
+                            to.IsDeleted = true;
+                            to.UpdatedAt = DateTime.Now;
+                        }
+                    }
+
+                    if (entry.Entity is TicketEntity ticket && ticket.IsDeleted)
+                    {
+                        var ticketOrders = Set<TicketOrderEntity>()
+                            .IgnoreQueryFilters()
+                            .Where(to => to.TicketId == ticket.Id);
+
+                        foreach (var to in ticketOrders)
+                        {
+                            to.IsDeleted = true;
+                            to.UpdatedAt = DateTime.Now;
+                        }
+                    }
                 }
             }
 
@@ -117,4 +143,3 @@ namespace TicketEase.Data.Context
         }
     }
 }
-
