@@ -10,7 +10,9 @@ namespace TicketEase.WebApi.Models.Update
         [EmailAddress]
         public string Email { get; set; }
         [Required]
-        [StringLength(100, MinimumLength = 6)]
+        [StringLength(100, MinimumLength = 2)]
+        [RegularExpression(@"^\S.*$", ErrorMessage = "Last name cannot start with a space.")]
+        [System.ComponentModel.DefaultValue("Joe")]
         public string FirstName { get; set; }
         [Required]
         [StringLength(100, MinimumLength = 2)]

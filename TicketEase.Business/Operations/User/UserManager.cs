@@ -203,7 +203,7 @@ namespace TicketEase.Business.Operations.User
                 UserType = user.UserType
             };
 
-            return new ServiceMessage<UserDto> { Success = true, Data = dto };
+            return new ServiceMessage<UserDto> { Success = true, Message = "User fetched successfully.", Data = dto };
         }
     }
 }

@@ -143,13 +143,13 @@ namespace TicketEase.Business.Operations.Event
                 OrganizerId = e.OrganizerId
             });
 
-            return new ServiceMessage<IEnumerable<EventDto>> { Success = true, Data = dtos };
+            return new ServiceMessage<IEnumerable<EventDto>> { Success = true, Message = "Events fetched successfully.", Data = dtos };
         }
 
         public async Task<ServiceMessage<IEnumerable<EventDto>>> SearchEventsByName(string nameStartsWith)
         {
             if (string.IsNullOrWhiteSpace(nameStartsWith))
-                return new ServiceMessage<IEnumerable<EventDto>> { Success = true, Data = new List<EventDto>() };
+                return new ServiceMessage<IEnumerable<EventDto>> { Success = true, Message = "Events fetched successfully.", Data = new List<EventDto>() };
 
             var search = nameStartsWith.Trim().ToLower();
             var events = await _eventRepository.FindAsync(e => e.Name.ToLower().StartsWith(search));
